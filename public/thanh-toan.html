@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thanh toán — Global Export 5.0</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: Inter, Arial, sans-serif; background:#f6f7fb; margin:0; padding:0; color:#1b1f27; }
+  .wrap { max-width: 520px; margin: 40px auto; background:#fff; border-radius: 16px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  p.sub { color:#666; margin-top:0; margin-bottom: 20px; }
+  label { display:block; font-size: 14px; font-weight:600; margin: 14px 0 6px; }
+  input, select { width:100%; padding: 10px 12px; border:1px solid #d7dbe3; border-radius:8px; font-size:15px; box-sizing:border-box; }
+  .error { color:#c0392b; font-size:13px; margin-top:4px; display:none; }
+  button { margin-top: 22px; width:100%; padding: 12px; border:none; border-radius:8px; background:#111827; color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:not-allowed; }
+  .qr-box { text-align:center; margin-top: 10px; }
+  .qr-box img { max-width: 260px; border:1px solid #eee; border-radius:12px; }
+  .amount { font-size: 24px; font-weight:800; margin: 10px 0; }
+  .status-pending { color:#b8860b; font-weight:600; }
+  .status-success { color:#1a8b3f; font-weight:700; font-size:18px; }
+  .order-code { font-family: monospace; background:#f1f2f6; padding:4px 8px; border-radius:6px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="form-view">
+    <h1>Thanh toán đăng ký</h1>
+    <p class="sub">Điền thông tin để tạo mã QR chuyển khoản qua Sepay.</p>
+
+    <label>Chọn sản phẩm/dịch vụ</label>
+    <select id="product_id"></select>
+
+    <label>Họ và tên</label>
+    <input id="name" type="text" placeholder="Nguyễn Văn A" />
+    <div class="error" id="err-name">Vui lòng nhập họ tên.</div>
+
+    <label>Số điện thoại</label>
+    <input id="phone" type="tel" placeholder="0901234567" />
+    <div class="error" id="err-phone">Số điện thoại không hợp lệ (định dạng VN).</div>
+
+    <label>Email</label>
+    <input id="email" type="email" placeholder="ban@email.com" />
+    <div class="error" id="err-email">Email không hợp lệ.</div>
+
+    <button id="submit-btn">Tạo mã QR thanh toán</button>
+    <div class="error" id="err-general"></div>
+  </div>
+
+  <div id="pay-view" class="hidden">
+    <h1>Quét mã để thanh toán</h1>
+    <p class="sub">Mã đơn hàng: <span class="order-code" id="order-code"></span></p>
+    <div class="qr-box">
+      <img id="qr-img" src="" alt="QR thanh toán" />
+      <p class="amount" id="amount"></p>
+      <p>Nội dung chuyển khoản (đã tự điền trong QR): <b id="content-code"></b></p>
+      <p id="status-line" class="status-pending">Đang chờ thanh toán...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const productSelect = document.getElementById("product_id");
+const phoneRe = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+fetch("/api/products").then(r => r.json()).then(products => {
+  productSelect.innerHTML = products.map(p =>
+    `<option value="${p.id}">${p.name} — ${Number(p.price).toLocaleString("vi-VN")}đ</option>`
+  ).join("");
+});
+
+function showError(id, show) {
+  document.getElementById(id).style.display = show ? "block" : "none";
+}
+
+document.getElementById("submit-btn").addEventListener("click", async () => {
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const product_id = productSelect.value;
+
+  let valid = true;
+  showError("err-name", !name); if (!name) valid = false;
+  showError("err-phone", !phoneRe.test(phone)); if (!phoneRe.test(phone)) valid = false;
+  showError("err-email", !emailRe.test(email)); if (!emailRe.test(email)) valid = false;
+  if (!valid) return;
+
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Đang tạo đơn...";
+
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email, product_id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Có lỗi xảy ra.");
+
+    document.getElementById("form-view").classList.add("hidden");
+    document.getElementById("pay-view").classList.remove("hidden");
+    document.getElementById("order-code").textContent = data.orderCode;
+    document.getElementById("content-code").textContent = data.orderCode;
+    document.getElementById("amount").textContent = Number(data.amount).toLocaleString("vi-VN") + "đ";
+    document.getElementById("qr-img").src = data.qrUrl;
+
+    pollStatus(data.orderId);
+  } catch (e) {
+    document.getElementById("err-general").textContent = e.message;
+    document.getElementById("err-general").style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "Tạo mã QR thanh toán";
+  }
+});
+
+function pollStatus(orderId) {
+  const line = document.getElementById("status-line");
+  const timer = setInterval(async () => {
+    const res = await fetch(`/api/orders/${orderId}/status`);
+    const data = await res.json();
+    if (data.status === "success") {
+      clearInterval(timer);
+      line.textContent = "✅ Thanh toán thành công! Cảm ơn bạn đã đăng ký.";
+      line.className = "status-success";
+    }
+  }, 3000);
+}
+</script>
+</body>
+</html>

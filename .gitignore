@@ -1,0 +1,8 @@
+node_modules/
+.env
+brain.db
+brain.db-shm
+brain.db-wal
+brain.db-journal
+.DS_Store
+_to_delete/
