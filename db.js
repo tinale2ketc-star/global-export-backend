@@ -50,19 +50,62 @@ CREATE TABLE IF NOT EXISTS orders (
 
 // Ràng buộc mềm: physical bắt buộc có stock, digital/service để NULL — validate ở tầng ứng dụng (routes)
 
-// ---------- Seed sản phẩm mặc định nếu bảng đang trống ----------
-const productCount = db.prepare("SELECT COUNT(*) AS c FROM products").get().c;
-if (productCount === 0) {
-  db.prepare(
-    `INSERT INTO products (name, type, price, description, stock) VALUES (?, ?, ?, ?, ?)`
-  ).run(
-    "Bộ công cụ AI cho 5 nhân viên",
-    "digital",
-    3000000,
-    "Thư viện prompt và trợ lý AI dựng riêng cho từng vị trí trong phòng xuất nhập khẩu (Sales, Chứng từ, Purchasing, Quản lý). Cấp 5 tài khoản, lộ trình triển khai 7 ngày. Giá gốc 5.000.000đ, đang giảm 40% còn 3.000.000đ.",
-    null
-  );
-  console.log("[db] Đã seed sản phẩm thật lấy từ crewinthetown.com.");
+// ---------- Seed catalogue sản phẩm thật ----------
+// QUAN TRỌNG: gói Render miễn phí KHÔNG có ổ đĩa lưu trữ. Mỗi lần service ngủ
+// (sau ~15 phút không có request) rồi thức dậy, hoặc mỗi lần deploy lại, toàn bộ
+// thư mục ứng dụng — bao gồm file brain.db này — bị tạo mới từ đầu. Nghĩa là mọi
+// sản phẩm thêm tay qua /admin sẽ biến mất sau đó.
+//
+// Vì vậy toàn bộ catalogue thật phải nằm ngay trong seed này, để sau mỗi lần khởi
+// động lại sản phẩm tự có đủ, không phải nhập tay lại. Seed theo từng sản phẩm
+// (kiểm tra theo tên) thay vì chỉ chạy khi bảng rỗng — như vậy sau này nếu có gắn
+// ổ đĩa thật hoặc chuyển sang Postgres, thêm sản phẩm mới vào danh sách dưới đây
+// vẫn seed được mà không tạo bản trùng.
+//
+// Dữ liệu KHÁCH HÀNG và ĐƠN HÀNG thì không seed được — muốn giữ được chúng phải
+// nâng cấp Render lên gói có Persistent Disk, hoặc chuyển database sang Postgres.
+
+const CATALOGUE = [
+  {
+    name: "Khóa học: Các cách tìm khách xuất khẩu",
+    type: "digital",
+    price: 1490000,
+    description:
+      "Toàn bộ kênh tìm buyer đang thực sự ra đơn — kèm cách dùng AI rút ngắn từng bước. Bản đồ 9 kênh tìm buyer: hội chợ, B2B, LinkedIn, dữ liệu hải quan. Quy trình thẩm định buyer trước khi báo giá. Cold email & follow-up theo phễu 7 chạm. Đàm phán giá, Incoterms và điều khoản thanh toán.",
+    stock: null,
+  },
+  {
+    name: "Bộ công cụ AI cho 5 nhân viên",
+    type: "digital",
+    price: 3000000,
+    description:
+      "Thư viện prompt và trợ lý AI dựng riêng cho từng vị trí trong phòng xuất nhập khẩu (Sales, Chứng từ, Purchasing, Quản lý). Cấp 5 tài khoản, lộ trình triển khai 7 ngày. Giá gốc 5.000.000đ, đang giảm 40% còn 3.000.000đ.",
+    stock: null,
+  },
+  {
+    name: "Chatbot AI trực khách 24/7",
+    type: "service",
+    price: 26300000,
+    description:
+      "Trợ lý trả lời buyer quốc tế lệch múi giờ, đọc đúng catalogue và giá của bạn. Huấn luyện trên catalogue, MOQ, chính sách giá thật của bạn. Đa ngôn ngữ: Anh, Trung, Nhật, Hàn, Tây Ban Nha. Gắn website, Messenger, WhatsApp, Zalo OA. Chấm điểm và chuyển lead nóng về sales kèm bản ghi. (Giá gốc 1.000 USD/triển khai — số tiền VNĐ là quy đổi tạm theo tỷ giá ~26.255đ/USD ngày 05/09/2026, khách tự đối chiếu tỷ giá ngân hàng lúc thanh toán và điều chỉnh nếu cần.)",
+    stock: null,
+  },
+];
+
+const findByName = db.prepare("SELECT id FROM products WHERE name = ?");
+const insertProduct = db.prepare(
+  `INSERT INTO products (name, type, price, description, stock) VALUES (?, ?, ?, ?, ?)`
+);
+
+let seeded = 0;
+for (const p of CATALOGUE) {
+  if (!findByName.get(p.name)) {
+    insertProduct.run(p.name, p.type, p.price, p.description, p.stock);
+    seeded++;
+  }
+}
+if (seeded > 0) {
+  console.log(`[db] Đã seed ${seeded} sản phẩm thật lấy từ crewinthetown.com.`);
 }
 
 module.exports = db;
