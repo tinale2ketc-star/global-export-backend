@@ -1,14 +1,13 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="vi"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Thanh toán — Global Export 5.0</title>
 <style>
   :root { color-scheme: light; }
   body { font-family: Inter, Arial, sans-serif; background:#f6f7fb; margin:0; padding:0; color:#1b1f27; }
-  .wrap { max-width: 520px; margin: 40px auto; background:#fff; border-radius: 16px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  .wrap { max-width: 560px; margin: 40px auto; background:#fff; border-radius: 16px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
   h1 { font-size: 22px; margin-bottom: 4px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; color:#111827; }
   p.sub { color:#666; margin-top:0; margin-bottom: 20px; }
   label { display:block; font-size: 14px; font-weight:600; margin: 14px 0 6px; }
   input, select { width:100%; padding: 10px 12px; border:1px solid #d7dbe3; border-radius:8px; font-size:15px; box-sizing:border-box; }
@@ -22,38 +21,70 @@
   .status-success { color:#1a8b3f; font-weight:700; font-size:18px; }
   .order-code { font-family: monospace; background:#f1f2f6; padding:4px 8px; border-radius:6px; }
   .hidden { display:none; }
+
+  .product-card { border:1px solid #e2e5eb; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; transition: border-color .15s, box-shadow .15s; }
+  .product-card:hover { border-color:#111827; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  .product-card.selected { border-color:#111827; border-width:2px; background:#fafafa; }
+  .product-card .pname { font-weight:700; font-size:15px; }
+  .product-card .pprice { color:#1a8b3f; font-weight:700; margin-top:4px; }
+  .product-card .pdesc { color:#777; font-size:13px; margin-top:6px; line-height:1.4; }
+
+  .quote-card { border:1px solid #eee; border-radius:12px; padding:14px 16px; margin-bottom:10px; background:#fbfbfc; }
+  .quote-card .pname { font-weight:700; font-size:15px; }
+  .quote-card .ptag { display:inline-block; font-size:11px; font-weight:700; color:#8a5b00; background:#fff4dd; border:1px solid #f0d9a6; border-radius:6px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
+  .quote-card .pdesc { color:#777; font-size:13px; margin-top:6px; line-height:1.4; }
+  .quote-actions { display:flex; gap:8px; margin-top:12px; }
+  .quote-actions a { flex:1; text-align:center; padding:9px 10px; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; box-sizing:border-box; }
+  .quote-actions a.zalo { background:#0068ff; color:#fff; }
+  .quote-actions a.phone { background:#111827; color:#fff; }
+
+  .selected-banner { display:flex; align-items:center; justify-content:space-between; background:#f1f2f6; border-radius:10px; padding:12px 14px; margin-top:6px; }
+  .selected-banner .txt { font-size:14px; }
+  .selected-banner .txt b { display:block; font-size:15px; }
+  .selected-banner button.linklike { all:unset; cursor:pointer; color:#111827; font-size:13px; text-decoration:underline; margin:0; width:auto; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="form-view">
     <h1>Thanh toán đăng ký</h1>
-    <p class="sub">Điền thông tin để tạo mã QR chuyển khoản qua Sepay.</p>
+    <p class="sub">Chọn gói bạn muốn — gói có giá sẵn sẽ tạo mã QR thanh toán ngay, gói cần tư vấn riêng thì liên hệ trực tiếp.</p>
 
-    <label>Chọn sản phẩm/dịch vụ</label>
-    <select id="product_id"></select>
+    <h2>Gói có giá sẵn — thanh toán ngay</h2>
+    <div id="priced-list"></div>
 
-    <label>Họ và tên</label>
-    <input id="name" type="text" placeholder="Nguyễn Văn A" />
-    <div class="error" id="err-name">Vui lòng nhập họ tên.</div>
+    <div id="selected-banner" class="selected-banner hidden">
+      <div class="txt">Đang chọn: <b id="selected-name"></b></div>
+      <button type="button" class="linklike" id="change-product">Đổi gói khác</button>
+    </div>
 
-    <label>Số điện thoại</label>
-    <input id="phone" type="tel" placeholder="0901234567" />
-    <div class="error" id="err-phone">Số điện thoại không hợp lệ (định dạng VN).</div>
+    <div id="info-form" class="hidden">
+      <label>Họ và tên</label>
+      <input id="name" type="text" placeholder="Nguyễn Văn A">
+      <div class="error" id="err-name">Vui lòng nhập họ tên.</div>
 
-    <label>Email</label>
-    <input id="email" type="email" placeholder="ban@email.com" />
-    <div class="error" id="err-email">Email không hợp lệ.</div>
+      <label>Số điện thoại</label>
+      <input id="phone" type="tel" placeholder="0901234567">
+      <div class="error" id="err-phone">Số điện thoại không hợp lệ (định dạng VN).</div>
 
-    <button id="submit-btn">Tạo mã QR thanh toán</button>
-    <div class="error" id="err-general"></div>
+      <label>Email</label>
+      <input id="email" type="email" placeholder="ban@email.com">
+      <div class="error" id="err-email">Email không hợp lệ.</div>
+
+      <button id="submit-btn">Tạo mã QR thanh toán</button>
+      <div class="error" id="err-general"></div>
+    </div>
+
+    <h2>Dịch vụ cần tư vấn &amp; báo giá riêng</h2>
+    <p class="sub" style="margin-bottom:14px;">Các gói này tuỳ theo quy mô doanh nghiệp nên không thanh toán trực tiếp qua QR — liên hệ để được báo giá chính xác.</p>
+    <div id="quote-list"></div>
   </div>
 
   <div id="pay-view" class="hidden">
     <h1>Quét mã để thanh toán</h1>
     <p class="sub">Mã đơn hàng: <span class="order-code" id="order-code"></span></p>
     <div class="qr-box">
-      <img id="qr-img" src="" alt="QR thanh toán" />
+      <img id="qr-img" src="" alt="QR thanh toán">
       <p class="amount" id="amount"></p>
       <p>Nội dung chuyển khoản (đã tự điền trong QR): <b id="content-code"></b></p>
       <p id="status-line" class="status-pending">Đang chờ thanh toán...</p>
@@ -62,25 +93,108 @@
 </div>
 
 <script>
-const productSelect = document.getElementById("product_id");
 const phoneRe = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-fetch("/api/products").then(r => r.json()).then(products => {
-  productSelect.innerHTML = products.map(p =>
-    `<option value="${p.id}">${p.name} — ${Number(p.price).toLocaleString("vi-VN")}đ</option>`
-  ).join("");
+// Sản phẩm được coi là "báo giá riêng" nếu mô tả có đánh dấu cảnh báo này.
+// Lưu ý cho Tina: khi thêm sản phẩm mới cần báo giá riêng trong /admin,
+// nhớ bắt đầu mô tả bằng "⚠️ BÁO GIÁ RIÊNG" hoặc "⚠️ GIÁ THẬT" để trang này
+// tự động xếp đúng vào mục "cần liên hệ" thay vì cho thanh toán QR trực tiếp.
+const QUOTE_MARKERS = ["BÁO GIÁ RIÊNG", "GIÁ THẬT"];
+function isQuoteOnly(product) {
+  const desc = (product.description || "");
+  return QUOTE_MARKERS.some(marker => desc.includes(marker));
+}
+
+const CONTACT_PHONE = "0869395647";
+const CONTACT_EMAIL = "hello.globalexport5@gmail.com";
+
+let selectedProduct = null;
+
+const pricedListEl = document.getElementById("priced-list");
+const quoteListEl = document.getElementById("quote-list");
+const infoForm = document.getElementById("info-form");
+const selectedBanner = document.getElementById("selected-banner");
+const selectedNameEl = document.getElementById("selected-name");
+
+function money(n) { return Number(n).toLocaleString("vi-VN") + "đ"; }
+
+function renderProducts(products) {
+  const priced = products.filter(p => !isQuoteOnly(p));
+  const quoted = products.filter(p => isQuoteOnly(p));
+
+  pricedListEl.innerHTML = "";
+  priced.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    card.dataset.id = p.id;
+    card.innerHTML = `
+      <div class="pname">${p.name}</div>
+      <div class="pprice">${money(p.price)}</div>
+      <div class="pdesc">${(p.description || "").slice(0, 140)}${(p.description || "").length > 140 ? "…" : ""}</div>
+    `;
+    card.addEventListener("click", () => selectProduct(p, card));
+    pricedListEl.appendChild(card);
+  });
+  if (priced.length === 0) {
+    pricedListEl.innerHTML = '<p class="sub">Hiện chưa có gói nào mở thanh toán trực tiếp.</p>';
+  }
+
+  quoteListEl.innerHTML = "";
+  quoted.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "quote-card";
+    const cleanDesc = (p.description || "").replace(/^⚠️[^.]*\./, "").trim();
+    card.innerHTML = `
+      <div class="pname">${p.name}<span class="ptag">Báo giá riêng</span></div>
+      <div class="pdesc">${cleanDesc.slice(0, 160)}${cleanDesc.length > 160 ? "…" : ""}</div>
+      <div class="quote-actions">
+        <a class="zalo" target="_blank" rel="noopener" href="https://zalo.me/${CONTACT_PHONE}">Nhắn Zalo tư vấn</a>
+        <a class="phone" href="tel:${CONTACT_PHONE}">Gọi ${CONTACT_PHONE}</a>
+      </div>
+    `;
+    quoteListEl.appendChild(card);
+  });
+  if (quoted.length === 0) {
+    quoteListEl.innerHTML = '<p class="sub">Hiện chưa có gói nào cần báo giá riêng.</p>';
+  }
+}
+
+function selectProduct(product, cardEl) {
+  selectedProduct = product;
+  document.querySelectorAll(".product-card").forEach(c => c.classList.remove("selected"));
+  if (cardEl) cardEl.classList.add("selected");
+
+  selectedNameEl.textContent = `${product.name} — ${money(product.price)}`;
+  selectedBanner.classList.remove("hidden");
+  infoForm.classList.remove("hidden");
+  infoForm.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+document.getElementById("change-product").addEventListener("click", () => {
+  selectedProduct = null;
+  document.querySelectorAll(".product-card").forEach(c => c.classList.remove("selected"));
+  selectedBanner.classList.add("hidden");
+  infoForm.classList.add("hidden");
 });
+
+fetch("/api/products").then(r => r.json()).then(renderProducts);
 
 function showError(id, show) {
   document.getElementById(id).style.display = show ? "block" : "none";
 }
 
 document.getElementById("submit-btn").addEventListener("click", async () => {
+  if (!selectedProduct) {
+    document.getElementById("err-general").textContent = "Vui lòng chọn 1 gói ở trên trước.";
+    document.getElementById("err-general").style.display = "block";
+    return;
+  }
+
   const name = document.getElementById("name").value.trim();
   const phone = document.getElementById("phone").value.trim();
   const email = document.getElementById("email").value.trim();
-  const product_id = productSelect.value;
+  const product_id = selectedProduct.id;
 
   let valid = true;
   showError("err-name", !name); if (!name) valid = false;
@@ -105,7 +219,7 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
     document.getElementById("pay-view").classList.remove("hidden");
     document.getElementById("order-code").textContent = data.orderCode;
     document.getElementById("content-code").textContent = data.orderCode;
-    document.getElementById("amount").textContent = Number(data.amount).toLocaleString("vi-VN") + "đ";
+    document.getElementById("amount").textContent = money(data.amount);
     document.getElementById("qr-img").src = data.qrUrl;
 
     pollStatus(data.orderId);
@@ -130,5 +244,6 @@ function pollStatus(orderId) {
   }, 3000);
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
