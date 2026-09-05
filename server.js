@@ -7,6 +7,82 @@ const { isValidPhone, isValidEmail, makeOrderCode, buildQrUrl } = require("./uti
 
 const app = express();
 app.use(express.json());
+// ==================================================
+// Bảo vệ khu vực admin bằng mật khẩu (HTTP Basic Auth)
+// ==================================================
+// Trong khu vực admin có tên, số điện thoại, email của khách hàng thật và nút xoá
+// dữ liệu, nên không được để mở cho bất kỳ ai có đường link.
+//
+// Mật khẩu đặt bằng biến môi trường trên Render (Environment):
+//   ADMIN_PASSWORD  — bắt buộc
+//   ADMIN_USER      — không bắt buộc, mặc định là "admin"
+//
+// Nếu chưa đặt ADMIN_PASSWORD thì khu vực admin bị KHOÁ HẲN chứ không mở tự do —
+// thà không vào được còn hơn để lộ dữ liệu khách.
+//
+// Lưu ý: middleware này phải nằm TRƯỚC express.static, vì express.static phục vụ
+// thẳng thư mục public/ nên nếu đặt sau thì vẫn vào được admin qua /admin.html.
+
+const crypto = require("crypto");
+
+const ADMIN_USER = process.env.ADMIN_USER || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+
+// So sánh chuỗi theo thời gian cố định, tránh dò mật khẩu qua thời gian phản hồi
+function safeEqual(a, b) {
+  const ba = Buffer.from(String(a), "utf8");
+  const bb = Buffer.from(String(b), "utf8");
+  if (ba.length !== bb.length) {
+    crypto.timingSafeEqual(ba, ba); // vẫn tốn thời gian tương đương
+    return false;
+  }
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+function isAdminPath(reqPath) {
+  const s = (reqPath.replace(/\/+$/, "") || "/").toLowerCase();
+  return s === "/admin" || s === "/admin.html" || s.startsWith("/api/admin");
+}
+
+function requireAdminAuth(req, res, next) {
+  if (!isAdminPath(req.path)) return next();
+
+  if (!ADMIN_PASSWORD) {
+    return res
+      .status(503)
+      .type("text/plain; charset=utf-8")
+      .send(
+        "Khu vuc admin dang bi khoa vi chua dat mat khau.\n\n" +
+          "Cach mo khoa: vao Render > service global-export-backend > tab Environment,\n" +
+          "them bien ADMIN_PASSWORD voi mat khau ban chon, bam Save."
+      );
+  }
+
+  const header = req.headers["authorization"] || "";
+  if (header.startsWith("Basic ")) {
+    let decoded = "";
+    try {
+      decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
+    } catch (e) {
+      decoded = "";
+    }
+    const i = decoded.indexOf(":");
+    const user = i === -1 ? decoded : decoded.slice(0, i);
+    const pass = i === -1 ? "" : decoded.slice(i + 1);
+    if (safeEqual(user, ADMIN_USER) && safeEqual(pass, ADMIN_PASSWORD)) {
+      return next();
+    }
+  }
+
+  res.set("WWW-Authenticate", 'Basic realm="Global Export 5.0 Admin", charset="UTF-8"');
+  return res
+    .status(401)
+    .type("text/plain; charset=utf-8")
+    .send("Can dang nhap de vao khu vuc admin.");
+}
+
+app.use(requireAdminAuth);
+
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
@@ -160,7 +236,7 @@ app.post("/api/sepay-webhook", (req, res) => {
 });
 
 // ==================================================
-// Admin API — CRUD cho 3 bảng (KHÔNG có đăng nhập, chỉ dùng demo/nội bộ)
+// Admin API — CRUD cho 3 bảng (đã được bảo vệ bằng mật khẩu, xem middleware ở đầu file)
 // ==================================================
 
 // ---- Products ----
