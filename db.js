@@ -108,4 +108,51 @@ if (seeded > 0) {
   console.log(`[db] Đã seed ${seeded} sản phẩm thật lấy từ crewinthetown.com.`);
 }
 
+
+// ---------- Khôi phục bản ghi khách hàng và đơn hàng của lần test thật ----------
+// Đây là dữ liệu THẬT đã xảy ra ngày 05/09/2026: một đơn 2.000đ được chuyển khoản thật,
+// Sepay gọi webhook về và hệ thống tự khớp, mã giao dịch 79389218.
+//
+// Vì Render gói miễn phí xoá sạch database mỗi lần service ngủ dậy, bản ghi này biến mất
+// sau mỗi lần đó. Khối dưới đây khôi phục lại nó để trang /admin luôn có dữ liệu ở cả 3 tab.
+//
+// CHỈ chạy khi bảng orders đang rỗng — nên nếu sau này xoá tay đơn này, hoặc đã có đơn
+// thật của khách, thì khối này không đụng vào gì nữa.
+//
+// Khi nào chuyển sang Postgres hoặc VPS (dữ liệu không còn bị mất) thì xoá cả khối này đi.
+
+const orderCount = db.prepare("SELECT COUNT(*) AS c FROM orders").get().c;
+if (orderCount === 0) {
+  const TEST_PRODUCT = "[TEST] Gói kiểm tra thanh toán 2.000đ";
+
+  let tp = db.prepare("SELECT id FROM products WHERE name = ?").get(TEST_PRODUCT);
+  if (!tp) {
+    const r = db
+      .prepare("INSERT INTO products (name, type, price, description, stock) VALUES (?, ?, ?, ?, ?)")
+      .run(
+        TEST_PRODUCT,
+        "digital",
+        2000,
+        "Gói dùng để chạy thử luồng thanh toán Sepay thật theo SOP Ngày 10. Không bán cho khách — đã ẩn khỏi trang thanh toán công khai.",
+        null
+      );
+    tp = { id: r.lastInsertRowid };
+  }
+
+  let cus = db.prepare("SELECT id FROM customers WHERE phone = ?").get("0869395647");
+  if (!cus) {
+    const r = db
+      .prepare("INSERT INTO customers (name, phone, email, zalo, registered_at) VALUES (?, ?, ?, ?, ?)")
+      .run("Tina Lê", "0869395647", "hello.globalexport5@gmail.com", null, "2026-09-05 13:48:53");
+    cus = { id: r.lastInsertRowid };
+  }
+
+  db.prepare(
+    `INSERT INTO orders (order_code, customer_id, product_id, amount, status, sepay_transaction_id, created_at, paid_at)
+     VALUES (?, ?, ?, ?, 'success', ?, ?, ?)`
+  ).run("DH000001", cus.id, tp.id, 2000, "79389218", "2026-09-05 13:48:53", "2026-09-05 13:50:08");
+
+  console.log("[db] Đã khôi phục bản ghi đơn test thật DH000001 (2.000đ, Sepay 79389218).");
+}
+
 module.exports = db;

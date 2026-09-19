@@ -129,7 +129,11 @@ app.post("/api/signup", (req, res) => {
 // Public: danh sách sản phẩm cho trang thanh toán
 // ==================================================
 app.get("/api/products", (req, res) => {
-  const products = db.prepare("SELECT id, name, type, price, description, stock FROM products").all();
+  // Ẩn các gói tên bắt đầu bằng "[TEST]" khỏi trang thanh toán công khai — chúng chỉ dùng
+  // để chạy thử luồng thanh toán và vẫn hiện đầy đủ trong trang /admin.
+  const products = db
+    .prepare("SELECT id, name, type, price, description, stock FROM products WHERE name NOT LIKE '[TEST]%' ORDER BY id ASC")
+    .all();
   res.json(products);
 });
 
