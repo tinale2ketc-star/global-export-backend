@@ -4,6 +4,7 @@ const path = require("path");
 const express = require("express");
 const db = require("./db");
 const { isValidPhone, isValidEmail, makeOrderCode, buildQrUrl } = require("./utils");
+const { guiChuoiChaoMung, guiXacNhanDon, laEmailTest } = require("./mailer");
 
 const app = express();
 app.use(express.json());
@@ -122,7 +123,14 @@ app.post("/api/signup", (req, res) => {
     return res.status(400).json({ error: "Email không hợp lệ." });
   }
   const customerId = upsertCustomer({ name: name.trim(), phone, email });
-  res.json({ success: true, customerId });
+
+  // Trả lời khách ngay, không bắt họ ngồi chờ Resend. Nếu Resend chậm hoặc lỗi thì
+  // đăng ký vẫn thành công và lỗi được ghi vào log — không để hỏng cả form vì email.
+  res.json({ success: true, customerId, cheDoTest: laEmailTest(email) });
+
+  guiChuoiChaoMung({ ten: name.trim(), email }).catch((err) =>
+    console.error("[mail] Lỗi chuỗi chào mừng:", err.message)
+  );
 });
 
 // ==================================================
@@ -203,6 +211,20 @@ function markOrderPaid(order, sepayTransactionId) {
   const product = db.prepare("SELECT * FROM products WHERE id = ?").get(order.product_id);
   if (product && product.type === "physical" && product.stock !== null) {
     db.prepare("UPDATE products SET stock = MAX(stock - 1, 0) WHERE id = ?").run(product.id);
+  }
+
+  // Email xác nhận đơn hàng — gửi ngay khi đơn chuyển sang "Thành công", bất kể do
+  // webhook Sepay tự khớp hay do admin bấm xác nhận tay.
+  const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(order.customer_id);
+  if (customer && customer.email) {
+    guiXacNhanDon({
+      ten: customer.name,
+      email: customer.email,
+      maDon: order.order_code,
+      tenSanPham: product ? product.name : "Hạng mục đã đặt",
+      soTien: order.amount,
+      thoiGian: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+    }).catch((err) => console.error("[mail] Lỗi email xác nhận đơn:", err.message));
   }
 }
 
@@ -356,6 +378,9 @@ app.delete("/api/admin/orders/:id", (req, res) => {
 // ==================================================
 app.get("/thanh-toan", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "thanh-toan.html"));
+});
+app.get("/dang-ky", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dang-ky.html"));
 });
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
