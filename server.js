@@ -8,6 +8,44 @@ const { guiChuoiChaoMung, guiXacNhanDon, laEmailTest } = require("./mailer");
 
 const app = express();
 app.use(express.json());
+
+// ==================================================
+// CORS — cho phép form trên website gọi sang API này
+// ==================================================
+// Website nằm trên Vercel (crewinthetown.com), API nằm trên Render
+// (pay.crewinthetown.com). Trình duyệt coi đây là hai nơi khác nhau nên sẽ chặn
+// lời gọi từ form sang API, trừ khi API nói rõ "tôi cho phép trang đó".
+//
+// Chỉ mở cho đúng các địa chỉ của Tina, không mở cho cả thiên hạ (*) — vì API này
+// ghi thẳng vào CRM, để mở hết thì ai cũng bơm dữ liệu rác vào được.
+const NGUON_DUOC_PHEP = [
+  "https://crewinthetown.com",
+  "https://www.crewinthetown.com",
+  "https://pay.crewinthetown.com",
+];
+
+function nguonHopLe(origin) {
+  if (!origin) return false;
+  if (NGUON_DUOC_PHEP.includes(origin)) return true;
+  // Các bản xem trước của chính dự án này trên Vercel (tên luôn bắt đầu bằng
+  // global-export-5-... và kết thúc bằng .vercel.app).
+  return /^https:\/\/global-export-5-[a-z0-9-]+\.vercel\.app$/.test(origin);
+}
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (nguonHopLe(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+  // Trình duyệt gửi một lời hỏi trước (OPTIONS) rồi mới gửi dữ liệu thật.
+  // Trả lời gọn ở đây, không cho nó đi tiếp vào khu vực cần mật khẩu.
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 // ==================================================
 // Bảo vệ khu vực admin bằng mật khẩu (HTTP Basic Auth)
 // ==================================================
@@ -91,29 +129,77 @@ const PORT = process.env.PORT || 3000;
 // ==================================================
 // Helpers
 // ==================================================
-function upsertCustomer({ name, phone, email, zalo }) {
+function upsertCustomer({ name, phone, email, zalo, hangMuc, congTy, quyMo, diemNghen, nguon }) {
   let existing = null;
   if (phone) existing = db.prepare("SELECT * FROM customers WHERE phone = ?").get(phone);
   if (!existing && email) existing = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
 
+  // COALESCE ở mọi trường phụ: khách quay lại điền lần hai mà bỏ trống ô nào thì
+  // giữ nguyên thông tin họ đã cho lần trước, không ghi đè bằng khoảng trắng.
   if (existing) {
     db.prepare(
-      "UPDATE customers SET name = ?, phone = COALESCE(?, phone), email = COALESCE(?, email), zalo = COALESCE(?, zalo) WHERE id = ?"
-    ).run(name, phone || null, email || null, zalo || null, existing.id);
+      `UPDATE customers SET
+         name       = ?,
+         phone      = COALESCE(?, phone),
+         email      = COALESCE(?, email),
+         zalo       = COALESCE(?, zalo),
+         hang_muc   = COALESCE(?, hang_muc),
+         cong_ty    = COALESCE(?, cong_ty),
+         quy_mo     = COALESCE(?, quy_mo),
+         diem_nghen = COALESCE(?, diem_nghen),
+         nguon      = COALESCE(?, nguon)
+       WHERE id = ?`
+    ).run(
+      name,
+      phone || null,
+      email || null,
+      zalo || null,
+      hangMuc || null,
+      congTy || null,
+      quyMo || null,
+      diemNghen || null,
+      nguon || null,
+      existing.id
+    );
     return existing.id;
   }
   const info = db
-    .prepare("INSERT INTO customers (name, phone, email, zalo) VALUES (?, ?, ?, ?)")
-    .run(name, phone || null, email || null, zalo || null);
+    .prepare(
+      `INSERT INTO customers (name, phone, email, zalo, hang_muc, cong_ty, quy_mo, diem_nghen, nguon)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      name,
+      phone || null,
+      email || null,
+      zalo || null,
+      hangMuc || null,
+      congTy || null,
+      quyMo || null,
+      diemNghen || null,
+      nguon || null
+    );
   return info.lastInsertRowid;
+}
+
+// Cắt bớt chuỗi quá dài trước khi lưu — tránh một ô textarea bị dán cả trang văn bản.
+function gonChuoi(v, max) {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  return s.length > max ? s.slice(0, max) : s;
 }
 
 // ==================================================
 // Public: form đăng ký trên landing page (waitlist)
 // ==================================================
 app.post("/api/signup", (req, res) => {
-  const { name, phone, email } = req.body || {};
-  if (!name || !name.trim()) {
+  const b = req.body || {};
+  const name = gonChuoi(b.name, 120);
+  const phone = gonChuoi(b.phone, 30);
+  const email = gonChuoi(b.email, 200);
+
+  if (!name) {
     return res.status(400).json({ error: "Vui lòng nhập họ tên." });
   }
   if (!isValidPhone(phone)) {
@@ -122,13 +208,24 @@ app.post("/api/signup", (req, res) => {
   if (email && !isValidEmail(email)) {
     return res.status(400).json({ error: "Email không hợp lệ." });
   }
-  const customerId = upsertCustomer({ name: name.trim(), phone, email });
+
+  const customerId = upsertCustomer({
+    name,
+    phone,
+    email,
+    zalo: phone, // form hỏi "Số điện thoại (Zalo)" nên đây cũng chính là Zalo
+    hangMuc: gonChuoi(b.hangMuc, 200),
+    congTy: gonChuoi(b.congTy, 200),
+    quyMo: gonChuoi(b.quyMo, 100),
+    diemNghen: gonChuoi(b.diemNghen, 2000),
+    nguon: gonChuoi(b.nguon, 40) || "khong-ro",
+  });
 
   // Trả lời khách ngay, không bắt họ ngồi chờ Resend. Nếu Resend chậm hoặc lỗi thì
   // đăng ký vẫn thành công và lỗi được ghi vào log — không để hỏng cả form vì email.
   res.json({ success: true, customerId, cheDoTest: laEmailTest(email) });
 
-  guiChuoiChaoMung({ ten: name.trim(), email }).catch((err) =>
+  guiChuoiChaoMung({ ten: name, email, hangMuc: gonChuoi(b.hangMuc, 200) }).catch((err) =>
     console.error("[mail] Lỗi chuỗi chào mừng:", err.message)
   );
 });

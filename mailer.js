@@ -100,13 +100,73 @@ const CHAN_THU = `---
 Bạn nhận email này vì đã đăng ký tại crewinthetown.com.
 Không muốn nhận nữa thì bấm trả lời, ghi "dừng" — tôi gỡ ngay.`;
 
-function email1(ten) {
+// Sáu hạng mục trên form không cùng một loại việc, nên thư chào không được nói
+// giống nhau cho cả sáu:
+//   - Ba hạng mục đầu có giá niêm yết  -> khách trả tiền ngay được, đưa thẳng link.
+//   - Hai hạng mục hệ thống cần báo giá -> hứa liên hệ, tuyệt đối không giục mua.
+//   - COMBO trọn hệ                     -> hẹn một buổi nói chuyện.
+// Gửi nhầm nhóm là hỏng: giục người cần báo giá đi thanh toán thì họ thấy mình
+// chưa được nghe; bắt người sẵn sàng mua phải chờ liên hệ thì mất đơn.
+function phanLoaiHangMuc(hangMuc) {
+  const s = String(hangMuc || "").toLowerCase();
+  if (!s) return "khong-ro";
+  if (s.includes("combo")) return "tu-van";
+  if (s.includes("báo giá") || s.includes("bao gia")) return "bao-gia";
+  return "co-gia";
+}
+
+function doanTheoHangMuc(hangMuc) {
+  if (!hangMuc) return "";
+  const loai = phanLoaiHangMuc(hangMuc);
+
+  const nhac = `Bạn đang quan tâm: ${hangMuc}.`;
+
+  if (loai === "co-gia") {
+    return `
+${nhac}
+
+Hạng mục này đã có giá sẵn, bạn không cần chờ tôi báo giá. Muốn bắt đầu luôn thì vào đây chọn gói và quét mã:
+
+${TRANG_THANH_TOAN}
+
+Còn nếu muốn hỏi cho rõ trước khi trả tiền thì cứ bấm trả lời email này. Tôi không giục.
+`;
+  }
+
+  if (loai === "bao-gia") {
+    return `
+${nhac}
+
+Hạng mục này tôi không niêm yết giá, vì giá phụ thuộc vào phòng ban của bạn đang bao nhiêu người, dữ liệu đang nằm ở đâu, và bạn muốn đi tới đâu. Báo một con số chung chung lúc này là tôi đoán mò.
+
+Tôi sẽ liên hệ lại để hỏi vài câu rồi mới gửi con số thật. Trong lúc chờ, bạn không phải làm gì cả.
+`;
+  }
+
+  if (loai === "tu-van") {
+    return `
+${nhac}
+
+Trọn hệ thì không nên chốt qua email. Tôi sẽ liên hệ để hẹn một buổi khoảng ba mươi phút, nghe bạn kể phòng xuất nhập khẩu đang vận hành thế nào, rồi mới nói nên làm gì trước làm gì sau.
+
+Buổi đó không mất phí và không có màn chốt đơn.
+`;
+  }
+
+  return `\n${nhac} Tôi ghi lại rồi, khi trao đổi sẽ bám đúng phần đó.\n`;
+}
+
+function email1(ten, hangMuc) {
+  // Nhắc lại đúng hạng mục khách vừa chọn — để họ thấy thông tin mình điền có
+  // người đọc thật, không rơi vào hư không.
+  const dongHangMuc = doanTheoHangMuc(hangMuc);
+
   return {
     subject: "Tôi nhận được đăng ký của bạn rồi",
     text: `${chao(ten)}
 
 Cảm ơn bạn đã để lại thông tin.
-
+${dongHangMuc}
 Tôi là Tina. Mấy năm nay tôi ngồi trong phòng xuất nhập khẩu của những công ty dưới 20 người — chỗ mà một người vừa tìm buyer, vừa làm chứng từ, vừa theo lô hàng, vừa trả lời email lúc mười một giờ đêm vì buyer bên kia địa cầu mới vừa ngủ dậy.
 
 Global Export 5.0 sinh ra từ chỗ đó. Không sinh ra từ một ý tưởng công nghệ.
@@ -256,12 +316,12 @@ function congNgay(soNgay) {
   return new Date(Date.now() + soNgay * 24 * 60 * 60 * 1000).toISOString();
 }
 
-async function guiChuoiChaoMung({ ten, email }) {
+async function guiChuoiChaoMung({ ten, email, hangMuc }) {
   if (!email) return { skipped: true, reason: "khách không để lại email" };
 
   const test = laEmailTest(email);
   const lich = [
-    { ...email1(ten), scheduledAt: null },
+    { ...email1(ten, hangMuc), scheduledAt: null },
     { ...email2(ten), scheduledAt: test ? null : congNgay(2) },
     { ...email3(ten), scheduledAt: test ? null : congNgay(3) },
   ];

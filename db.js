@@ -50,6 +50,38 @@ CREATE TABLE IF NOT EXISTS orders (
 
 // Ràng buộc mềm: physical bắt buộc có stock, digital/service để NULL — validate ở tầng ứng dụng (routes)
 
+// ---------- Migration: bổ sung cột cho form đăng ký đầy đủ ----------
+// Form thật trên website hỏi nhiều hơn 3 ô cơ bản: khách quan tâm hạng mục nào,
+// làm ở công ty nào, phòng xuất nhập khẩu bao nhiêu người, và đang vướng ở đâu.
+// Bốn thông tin đó là thứ quyết định nên báo giá gói nào và nói chuyện thế nào,
+// nên phải lưu vào CRM chứ không được vứt đi.
+//
+// Dùng ALTER TABLE thay vì sửa thẳng CREATE TABLE ở trên, để database đã có sẵn
+// dữ liệu cũ vẫn nâng cấp được mà không mất khách nào. Chạy lại nhiều lần vô hại:
+// cột nào đã có thì bỏ qua.
+const COT_KHACH_HANG_MOI = [
+  ["hang_muc", "TEXT"], // hạng mục khách quan tâm (1 trong 6 lựa chọn trên form)
+  ["cong_ty", "TEXT"], // tên công ty
+  ["quy_mo", "TEXT"], // quy mô phòng xuất nhập khẩu
+  ["diem_nghen", "TEXT"], // điểm nghẽn lớn nhất khách đang gặp
+  ["nguon", "TEXT"], // đến từ đâu: 'website' hay 'trang-dang-ky'
+];
+
+const cotDangCo = new Set(
+  db.prepare("PRAGMA table_info(customers)").all().map((c) => c.name)
+);
+
+let soCotDaThem = 0;
+for (const [ten, kieu] of COT_KHACH_HANG_MOI) {
+  if (!cotDangCo.has(ten)) {
+    db.exec(`ALTER TABLE customers ADD COLUMN ${ten} ${kieu}`);
+    soCotDaThem++;
+  }
+}
+if (soCotDaThem > 0) {
+  console.log(`[db] Đã bổ sung ${soCotDaThem} cột mới vào bảng customers.`);
+}
+
 // ---------- Seed catalogue sản phẩm thật ----------
 // QUAN TRỌNG: gói Render miễn phí KHÔNG có ổ đĩa lưu trữ. Mỗi lần service ngủ
 // (sau ~15 phút không có request) rồi thức dậy, hoặc mỗi lần deploy lại, toàn bộ
