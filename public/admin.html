@@ -63,7 +63,7 @@
 <!-- CUSTOMERS -->
 <div class="panel hidden" id="panel-customers">
   <table>
-    <thead><tr><th>ID</th><th>Tên</th><th>SĐT</th><th>Email</th><th>Zalo</th><th>Ngày đăng ký</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Tên</th><th>SĐT</th><th>Email</th><th>Hạng mục quan tâm</th><th>Công ty</th><th>Quy mô</th><th>Điểm nghẽn</th><th>Nguồn</th><th>Ngày đăng ký</th><th></th></tr></thead>
     <tbody id="customers-body"></tbody>
   </table>
   <div class="add-form">
@@ -144,17 +144,37 @@ async function deleteProduct(id) {
 }
 
 // ---- Customers ----
+// Dữ liệu dưới đây do khách tự điền trên form công khai, nên phải khử ký tự HTML
+// trước khi đổ vào trang. Không khử thì một người điền đoạn mã vào ô "điểm nghẽn"
+// là đoạn mã đó chạy ngay trong trình duyệt của Tina khi mở trang admin.
+function thoat(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+// Ô điểm nghẽn có thể rất dài — hiện gọn, rê chuột vào xem đầy đủ.
+function rutGon(v, max) {
+  const s = String(v == null ? "" : v);
+  if (s.length <= max) return thoat(s);
+  return `<span title="${thoat(s)}">${thoat(s.slice(0, max))}…</span>`;
+}
+
 async function loadCustomers() {
   const customers = await fetch("/api/admin/customers").then(r => r.json());
   document.getElementById("customers-body").innerHTML = customers.map(c => `
     <tr>
-      <td>${c.id}</td><td>${c.name}</td><td>${c.phone || ""}</td>
-      <td>${c.email || ""}</td><td>${c.zalo || ""}</td>
-      <td>${c.registered_at}</td>
+      <td>${c.id}</td><td>${thoat(c.name)}</td><td>${thoat(c.phone)}</td>
+      <td>${thoat(c.email)}</td>
+      <td>${rutGon(c.hang_muc, 40)}</td>
+      <td>${thoat(c.cong_ty)}</td>
+      <td>${thoat(c.quy_mo)}</td>
+      <td>${rutGon(c.diem_nghen, 50)}</td>
+      <td>${thoat(c.nguon)}</td>
+      <td>${thoat(c.registered_at)}</td>
       <td><button class="small btn-delete" onclick="deleteCustomer(${c.id})">Xoá</button></td>
     </tr>`).join("");
 
-  document.getElementById("o-customer").innerHTML = customers.map(c => `<option value="${c.id}">${c.name} (${c.phone || c.email || ""})</option>`).join("");
+  document.getElementById("o-customer").innerHTML = customers.map(c => `<option value="${c.id}">${thoat(c.name)} (${thoat(c.phone || c.email || "")})</option>`).join("");
   return customers;
 }
 async function addCustomer() {

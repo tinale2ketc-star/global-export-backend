@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Đăng ký nhận tư vấn — Global Export 5.0</title>
+<meta name="description" content="Để lại thông tin để nhận chuỗi thư chia sẻ kinh nghiệm vận hành xuất khẩu từ Global Export 5.0." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* Bộ màu, font và bố cục lấy đúng từ website V2 (crewinthetown.com):
+     biến --ge-*, cặp font Barlow / Barlow Condensed, thanh nav, dải thống kê,
+     dòng chân trang. Trang này phải trông như một trang của site, không phải
+     một cái form rời gắn tạm. */
+  :root {
+    --ge-navy:   #101f4a;
+    --ge-blue:   #1d4ed8;
+    --ge-blue-d: #1740b5;
+    --ge-yellow: #f5a623;
+    --ge-yellow-d: #e2960f;
+    --ge-ground: #f6f8fc;
+    --ge-paper:  #ffffff;
+    --ge-line:   #e3e8f2;
+    --ge-muted:  #55617d;
+    --ge-red:    #d92d20;
+    --ge-tint:   #eaf0ff;
+    --font-body:    "Barlow", system-ui, -apple-system, sans-serif;
+    --font-heading: "Barlow Condensed", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--ge-ground); color: var(--ge-navy);
+    font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Thanh đầu trang ---------- */
+  header {
+    background: var(--ge-paper); border-bottom: 1px solid var(--ge-line);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .bar { display: flex; align-items: center; gap: 20px; height: 72px; }
+  .wordmark {
+    display: flex; align-items: center; gap: 9px; text-decoration: none;
+    font-family: var(--font-heading); font-weight: 700; font-size: 25px;
+    letter-spacing: .3px; margin-right: auto; white-space: nowrap;
+  }
+  .wordmark .a { color: var(--ge-navy); }
+  .wordmark .b { color: var(--ge-blue); }
+  .wordmark .c { color: var(--ge-yellow); }
+  .crown { width: 25px; height: 25px; flex: none; }
+
+  nav { display: flex; align-items: center; gap: 26px; }
+  nav a.link {
+    color: var(--ge-navy); text-decoration: none; font-weight: 500; font-size: 15.5px;
+  }
+  nav a.link:hover { color: var(--ge-blue); }
+
+  .btn {
+    display: inline-block; text-decoration: none; text-align: center;
+    font-family: var(--font-heading); font-weight: 700; letter-spacing: .3px;
+    border-radius: 9px; transition: background .15s, border-color .15s;
+  }
+  .btn-blue  { background: var(--ge-blue); color: #fff; padding: 10px 20px; font-size: 17px; }
+  .btn-blue:hover { background: var(--ge-blue-d); }
+  .btn-gold  { background: var(--ge-yellow); color: #22160a; padding: 10px 20px; font-size: 17px; }
+  .btn-gold:hover { background: var(--ge-yellow-d); }
+
+  @media (max-width: 900px) { nav .link { display: none; } }
+  @media (max-width: 560px) {
+    .bar { height: 64px; gap: 12px; }
+    .wordmark { font-size: 21px; }
+    .btn-blue, .btn-gold { padding: 8px 14px; font-size: 15px; }
+    nav { gap: 10px; }
+  }
+
+  /* ---------- Phần mở đầu ---------- */
+  .hero { padding: 56px 0 8px; text-align: center; }
+  .badge {
+    display: inline-block; background: var(--ge-tint); color: var(--ge-navy);
+    font-weight: 600; font-size: 12.5px; letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 8px 18px; border-radius: 999px; margin-bottom: 22px;
+  }
+  h1 {
+    font-family: var(--font-heading); font-weight: 700;
+    font-size: 54px; line-height: 1.05; letter-spacing: -.5px; margin: 0 0 18px;
+  }
+  h1 .blue { color: var(--ge-blue); }
+  .lede {
+    max-width: 620px; margin: 0 auto; color: var(--ge-muted); font-size: 18px;
+  }
+  @media (max-width: 700px) { .hero { padding: 36px 0 4px; } h1 { font-size: 36px; } .lede { font-size: 16.5px; } }
+
+  /* ---------- Thẻ biểu mẫu ---------- */
+  .card {
+    max-width: 560px; margin: 36px auto 0; background: var(--ge-paper);
+    border: 1px solid var(--ge-line); border-radius: 16px; padding: 34px 32px;
+    box-shadow: 0 2px 14px rgba(16,31,74,.05);
+  }
+  .strip {
+    background: #fff8ec; border-left: 3px solid var(--ge-yellow);
+    border-radius: 0 8px 8px 0; padding: 13px 16px; margin-bottom: 4px;
+    font-size: 15px; color: #6b5325;
+  }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 20px 0 6px; }
+  input {
+    width: 100%; padding: 12px 14px; font-size: 16px;
+    font-family: var(--font-body); color: var(--ge-navy); background: var(--ge-paper);
+    border: 1px solid var(--ge-line); border-radius: 9px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder, textarea::placeholder { color: #a9b1c4; }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--ge-blue);
+    box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+  }
+  textarea {
+    width: 100%; padding: 12px 14px; font-size: 16px; line-height: 1.55;
+    font-family: var(--font-body); color: var(--ge-navy); background: var(--ge-paper);
+    border: 1px solid var(--ge-line); border-radius: 9px; resize: vertical; min-height: 96px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .doi { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  @media (max-width: 560px) { .doi { grid-template-columns: 1fr; } }
+
+  fieldset.hangmuc {
+    margin: 22px 0 4px; padding: 16px 18px 6px;
+    border: 1px solid var(--ge-line); border-radius: 11px; background: var(--ge-paper);
+  }
+  fieldset.hangmuc legend {
+    padding: 0 8px; font-family: var(--font-heading); font-weight: 700;
+    font-size: 14px; letter-spacing: .8px; text-transform: uppercase; color: var(--ge-blue);
+  }
+  .chon {
+    display: flex; align-items: flex-start; gap: 11px; margin: 0;
+    padding: 9px 0; cursor: pointer; font-size: 15.5px; line-height: 1.45;
+    font-weight: 500;
+  }
+  .chon input[type="radio"] {
+    width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--ge-blue);
+  }
+  .chon:hover { color: var(--ge-blue); }
+  .gia { color: var(--ge-muted); }
+  button.submit {
+    width: 100%; margin-top: 26px; padding: 15px;
+    font-family: var(--font-heading); font-weight: 700; font-size: 20px; letter-spacing: .3px;
+    color: #fff; background: var(--ge-blue); border: 0; border-radius: 9px;
+    cursor: pointer; transition: background .15s;
+  }
+  button.submit:hover:not(:disabled) { background: var(--ge-blue-d); }
+  button.submit:disabled { opacity: .55; cursor: default; }
+  .loi { color: var(--ge-red); margin-top: 14px; font-size: 15px; font-weight: 500; }
+  .fineprint {
+    margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--ge-line);
+    font-size: 14px; color: var(--ge-muted);
+  }
+  @media (max-width: 560px) { .card { padding: 26px 20px; margin-top: 26px; } }
+
+  /* ---------- Màn hình sau khi gửi ---------- */
+  .done { text-align: center; }
+  .tick {
+    width: 62px; height: 62px; margin: 4px auto 18px; border-radius: 50%;
+    background: var(--ge-tint); display: flex; align-items: center; justify-content: center;
+  }
+  .done h2 {
+    font-family: var(--font-heading); font-weight: 700; font-size: 30px; margin: 0 0 10px;
+  }
+  .steps { text-align: left; background: var(--ge-ground); border-radius: 11px; padding: 18px 20px; margin-top: 22px; }
+  .steps b { font-size: 15px; }
+  .steps ol { margin: 10px 0 0; padding-left: 20px; color: var(--ge-muted); font-size: 15px; }
+  .steps li { margin: 7px 0; }
+
+  /* ---------- Dải thống kê ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 52px 0 8px; }
+  .stat {
+    background: var(--ge-paper); border: 1px solid var(--ge-line);
+    border-radius: 14px; padding: 24px 18px; text-align: center;
+  }
+  .stat .n {
+    font-family: var(--font-heading); font-weight: 700; font-size: 42px; line-height: 1;
+  }
+  .stat .l { color: var(--ge-muted); font-size: 14.5px; margin-top: 8px; }
+  .n-navy { color: var(--ge-navy); }
+  .n-red  { color: var(--ge-red); }
+  .n-gold { color: var(--ge-yellow); }
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: 1fr; gap: 12px; margin-top: 36px; }
+    .stat { padding: 18px; }
+    .stat .n { font-size: 34px; }
+  }
+
+  /* ---------- Chân trang ---------- */
+  footer {
+    margin-top: 54px; border-top: 1px solid var(--ge-line);
+    background: var(--ge-paper); padding: 28px 0 34px;
+  }
+  .foot {
+    display: flex; flex-wrap: wrap; gap: 12px 28px;
+    align-items: center; justify-content: space-between;
+    font-size: 14.5px; color: var(--ge-muted);
+  }
+  .foot a { color: var(--ge-navy); text-decoration: none; font-weight: 500; }
+  .foot a:hover { color: var(--ge-blue); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="wordmark" href="https://crewinthetown.com">
+      <svg class="crown" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 8l4 3 5-6 5 6 4-3v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"
+              fill="#f5a623" stroke="#101f4a" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>
+      <span><span class="a">Global</span><span class="b">Export</span> <span class="c">5.0</span></span>
+    </a>
+    <nav>
+      <a class="link" href="https://crewinthetown.com#giai-phap">Giải pháp</a>
+      <a class="link" href="https://crewinthetown.com#combo">Combo</a>
+      <a class="link" href="https://crewinthetown.com#demo">Xem trước</a>
+      <a class="link" href="https://crewinthetown.com#quy-trinh">Quy trình</a>
+      <a class="link" href="https://crewinthetown.com#faq">Hỏi đáp</a>
+      <a class="btn btn-blue" href="/thanh-toan">Thanh toán</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <span class="badge">Hệ vận hành xuất khẩu bằng AI</span>
+    <h1>Để lại thông tin,<br><span class="blue">tôi gửi bạn thứ dùng được</span></h1>
+    <p class="lede">
+      Ba lá thư trong vài ngày tới. Một thư chào, một thư kể chuyện thật từ phòng
+      xuất nhập khẩu, một thư nói rõ tôi có gì và giá bao nhiêu. Không thư rác.
+    </p>
+  </section>
+
+  <div class="card">
+
+    <div id="form-view">
+      <div class="strip">
+        Email của bạn dùng để gửi ba lá thư đó, không dùng vào việc gì khác và
+        không bán lại cho ai.
+      </div>
+
+      <fieldset class="hangmuc">
+        <legend>Hạng mục quan tâm *</legend>
+        <label class="chon"><input type="radio" name="hangmuc" value="Khóa học Các cách tìm khách — 1.490.000đ" /><span>Khóa học Các cách tìm khách <span class="gia">— 1.490.000đ</span></span></label>
+        <label class="chon"><input type="radio" name="hangmuc" value="Bộ công cụ AI cho 5 nhân viên — 3.000.000đ" /><span>Bộ công cụ AI cho 5 nhân viên <span class="gia">— 3.000.000đ</span></span></label>
+        <label class="chon"><input type="radio" name="hangmuc" value="Chatbot AI 24/7 — 1.000 USD" /><span>Chatbot AI 24/7 <span class="gia">— 1.000 USD</span></span></label>
+        <label class="chon"><input type="radio" name="hangmuc" value="Hệ thống quản trị nhân sự &amp; phòng ban — cần báo giá" /><span>Hệ thống quản trị nhân sự &amp; phòng ban <span class="gia">— cần báo giá</span></span></label>
+        <label class="chon"><input type="radio" name="hangmuc" value="Hệ thống dữ liệu &amp; phân loại khách hàng — cần báo giá" /><span>Hệ thống dữ liệu &amp; phân loại khách hàng <span class="gia">— cần báo giá</span></span></label>
+        <label class="chon"><input type="radio" name="hangmuc" value="COMBO trọn hệ Global Export 5.0 — Đặt lịch tư vấn" checked /><span>COMBO trọn hệ Global Export 5.0 <span class="gia">— Đặt lịch tư vấn</span></span></label>
+      </fieldset>
+
+      <label for="ten">Họ và tên *</label>
+      <input id="ten" type="text" placeholder="Nguyễn Văn A" autocomplete="name" />
+
+      <div class="doi">
+        <div>
+          <label for="email">Email công ty *</label>
+          <input id="email" type="email" placeholder="ten@congty.com" autocomplete="email" inputmode="email" />
+        </div>
+        <div>
+          <label for="sdt">Số điện thoại (Zalo) *</label>
+          <input id="sdt" type="tel" placeholder="09xx xxx xxx" autocomplete="tel" inputmode="tel" />
+        </div>
+      </div>
+
+      <div class="doi">
+        <div>
+          <label for="congty">Công ty</label>
+          <input id="congty" type="text" placeholder="Tên công ty" autocomplete="organization" />
+        </div>
+        <div>
+          <label for="quymo">Quy mô phòng XNK</label>
+          <input id="quymo" type="text" placeholder="VD: 5 nhân sự" />
+        </div>
+      </div>
+
+      <label for="diemnghen">Điểm nghẽn lớn nhất hiện tại</label>
+      <textarea id="diemnghen" placeholder="VD: có khách hỏi nhưng tỉ lệ chốt thấp; chứng từ hay bị trả về..."></textarea>
+
+      <button class="submit" id="nut" type="button">Gửi đăng ký — nhận báo giá</button>
+      <div id="loi" class="loi"></div>
+
+      <div class="fineprint">
+        Muốn dừng nhận thư thì trả lời bất kỳ thư nào, ghi “dừng” — tôi gỡ ngay.
+        Cần trao đổi gấp thì nhắn Zalo <strong>0869395647</strong>.
+      </div>
+    </div>
+
+    <div id="done-view" class="done" style="display:none">
+      <div class="tick">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+          <path d="M20 6L9 17l-5-5" stroke="#1d4ed8" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>Đã nhận đăng ký của bạn</h2>
+      <p class="lede" id="done-text" style="font-size:16.5px">Thư chào đang trên đường tới hộp thư của bạn.</p>
+
+      <div class="steps">
+        <b>Tiếp theo thế nào</b>
+        <ol>
+          <li>Ngay bây giờ — thư chào.</li>
+          <li>Hai ngày nữa — một chuyện thật từ phòng xuất nhập khẩu.</li>
+          <li>Một ngày sau đó — tôi nói rõ mình có gì, giá bao nhiêu, và ai không nên mua.</li>
+        </ol>
+      </div>
+
+      <div class="fineprint">
+        Không thấy thư sau vài phút thì ngó giúp tôi hộp <strong>Quảng cáo</strong>
+        hoặc <strong>Spam</strong>. Vẫn không có thì nhắn Zalo <strong>0869395647</strong>.
+      </div>
+    </div>
+
+  </div>
+
+  <section class="stats">
+    <div class="stat"><div class="n n-navy">5</div><div class="l">Hạng mục triển khai</div></div>
+    <div class="stat"><div class="n n-red">24/7</div><div class="l">Chatbot trực khách quốc tế</div></div>
+    <div class="stat"><div class="n n-gold">14 ngày</div><div class="l">Bàn giao trọn hệ</div></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 Global Export 5.0 — Toàn bộ nội dung thuộc quyền của bạn.</span>
+    <span>
+      <a href="https://zalo.me/0869395647">Zalo 0869395647</a>
+      &nbsp;·&nbsp;
+      <a href="mailto:hello.globalexport5@gmail.com">hello.globalexport5@gmail.com</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  const REGEX_SDT = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+  const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const nut = document.getElementById("nut");
+  const oLoi = document.getElementById("loi");
+
+  function giaTri(id) { return document.getElementById(id).value.trim(); }
+
+  async function guiDangKy() {
+    const ten = giaTri("ten");
+    const phone = giaTri("sdt").replace(/[.\s-]/g, "");
+    const email = giaTri("email");
+    const daChon = document.querySelector('input[name="hangmuc"]:checked');
+
+    oLoi.textContent = "";
+    if (!daChon) return (oLoi.textContent = "Vui lòng chọn một hạng mục bạn quan tâm.");
+    if (!ten) return (oLoi.textContent = "Vui lòng nhập họ tên.");
+    if (!REGEX_EMAIL.test(email)) return (oLoi.textContent = "Email không hợp lệ.");
+    if (!REGEX_SDT.test(phone)) return (oLoi.textContent = "Số điện thoại không hợp lệ. Nhập đúng định dạng số Việt Nam.");
+
+    nut.disabled = true;
+    nut.textContent = "Đang gửi...";
+
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: ten,
+          phone,
+          email,
+          hangMuc: daChon.value,
+          congTy: giaTri("congty"),
+          quyMo: giaTri("quymo"),
+          diemNghen: giaTri("diemnghen"),
+          nguon: "trang-dang-ky",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Có lỗi xảy ra, vui lòng thử lại.");
+
+      if (data.cheDoTest) {
+        document.getElementById("done-text").textContent =
+          "Chế độ test: cả ba thư được gửi ngay bây giờ, không chờ theo lịch.";
+      }
+      document.getElementById("form-view").style.display = "none";
+      document.getElementById("done-view").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      oLoi.textContent = e.message;
+      nut.disabled = false;
+      nut.textContent = "Gửi đăng ký — nhận báo giá";
+    }
+  }
+
+  nut.addEventListener("click", guiDangKy);
+
+  // Bấm Enter ở ô một dòng cũng gửi được — khách điền trên điện thoại đỡ phải
+  // thu bàn phím lại rồi mới bấm được nút. Ô "điểm nghẽn" thì không, vì ở đó
+  // Enter là để xuống dòng.
+  ["ten", "sdt", "email", "congty", "quymo"].forEach((id) => {
+    document.getElementById(id).addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); guiDangKy(); }
+    });
+  });
+</script>
+</body>
+</html>
